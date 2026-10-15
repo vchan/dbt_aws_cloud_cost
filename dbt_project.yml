@@ -24,6 +24,4 @@ vars:
   aws_cloud_cost_start_date: "1970-01-01"
 
 flags:
-  use_catalogs_v2: true
-  require_generic_test_arguments_property: true
   send_anonymous_usage_stats: false
