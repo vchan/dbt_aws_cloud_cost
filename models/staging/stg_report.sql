@@ -1,11 +1,12 @@
 {#-
   The demo's source is the committed seed (seeds/aws_cost_report.csv), loaded
-  by `dbt seed` into the default (native Snowflake) connection.
-  `table_format='iceberg'` (no `catalog_name`/CLD needed) makes this a valid
-  upstream for daily_overview's `adapter: lakecompute` -- LakeCompute models
-  require every upstream to be catalog-attached in some form.
+  by `dbt seed` into the default BigQuery connection.
+  `catalog_name` makes this a BigQuery Iceberg table in the `bigquery_iceberg`
+  catalog (catalogs.yml). Lake Compute reads it through BigQuery's Iceberg
+  REST catalog, and daily_overview's `adapter: lakecompute` requires every
+  upstream to be readable that way.
 -#}
-{{ config(table_format='iceberg') }}
+{{ config(catalog_name='bigquery_iceberg') }}
 with source as (
 
     select *

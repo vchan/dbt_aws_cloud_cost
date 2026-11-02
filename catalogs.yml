@@ -1,0 +1,9 @@
+catalogs:
+  - name: bigquery_iceberg
+    type: biglake_metastore
+    table_format: iceberg
+    config:
+      bigquery:
+        external_volume: gs://lake_compute_bq_demo/aws_cloud_cost
+        file_format: parquet
+        connection_id: singular-vector-135519.us-east4.quack_probe_conn
