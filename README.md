@@ -50,8 +50,9 @@ aws_cost_report (seed, BigQuery)
 | Lake Compute API | `profiles.yml` `base_url` | `http://localhost:8080` |
 
 `bigquery_connection` is a field of the `lakecompute` output that tells Lake
-Compute which BigQuery connection to publish through. A Fusion build that
-doesn't know the field fails on the profile.
+Compute which BigQuery connection to publish through. It is required, and
+the `lakecompute` output's `database` is the BigQuery project it publishes
+into. A Fusion build that doesn't know the field fails on the profile.
 
 ## Quick start
 
@@ -146,6 +147,10 @@ Both counts should be 0.
 - `try_cast` became `dbt.safe_cast`; timestamps use `dbt.type_timestamp()`.
 - `aws_cloud_cost_regex_group` uses BigQuery's `regexp_extract(value, pattern)`
   (it returns the first capture group and takes no group index).
+- `daily_overview` takes the date of a timestamp in UTC explicitly
+  (`aws_cloud_cost_utc_date`). DuckDB casts a timestamp to a date in the
+  session time zone, which on a local Lake Compute worker is the host's, and
+  that moved every billing period date back a day.
 - `daily_overview` aliases are lowercase and unquoted. The uppercase quoted
   aliases only worked around Snowflake's identifier casing.
 - The seed columns are all `string`; `stg_report` casts them to typed columns.
@@ -178,8 +183,8 @@ repo.
 - **`Selecting a node's adapter with adapter: lakecompute is experimental`**:
   set `DBT_ENGINE_EXPERIMENTAL_MULTI_ADAPTER=true`.
 - **`upstream ... is not reachable through a catalog`** at parse: this Fusion
-  build can't yet read a `biglake_metastore` upstream from a Lake Compute
-  model. Use a build with BigQuery support, or the reference var above.
+  build can't read a `biglake_metastore` upstream from a Lake Compute model.
+  Use a build with BigQuery support, or the reference var above.
 - **`Driver not found: adbc_driver_bigquery`**: `ADBC_REPOSITORY` points at a
   directory that lacks the BigQuery driver, see
   [Running against a local driver build](#running-against-a-local-driver-build).

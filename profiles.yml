@@ -24,6 +24,5 @@ aws_cloud_cost:
         token: "{{ env_var('LAKE_COMPUTE_AUTH_TOKEN') }}"
         ## The BigQuery project that Lake Compute publishes into.
         database: singular-vector-135519
-        ## BigQuery connection used to publish the Iceberg table. Fusion
-        ## builds that don't know this field reject the profile.
+        ## BigQuery connection used to publish the Iceberg table. Required.
         bigquery_connection: singular-vector-135519.us-east4.quack_probe_conn

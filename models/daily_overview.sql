@@ -96,10 +96,10 @@ fields as (
         report,
 
         {# Period Details #}
-        cast(usage_start_date as date) as usage_start_date,
-        cast(usage_end_date as date) as usage_end_date,
-        cast(billing_period_start_date as date) as billing_period_start_date,
-        cast(billing_period_end_date as date) as billing_period_end_date,
+        {{ aws_cloud_cost_utc_date('usage_start_date') }} as usage_start_date,
+        {{ aws_cloud_cost_utc_date('usage_end_date') }} as usage_end_date,
+        {{ aws_cloud_cost_utc_date('billing_period_start_date') }} as billing_period_start_date,
+        {{ aws_cloud_cost_utc_date('billing_period_end_date') }} as billing_period_end_date,
 
         {# Account Details #}
         source_report.usage_account_id,

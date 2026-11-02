@@ -119,6 +119,13 @@ class DemoConfigurationTest(unittest.TestCase):
         self.assertIn("aws_cloud_cost_reference", overview)
         self.assertNotIn("propagate", overview)
 
+    def test_daily_overview_dates_are_taken_in_utc(self):
+        overview = self.read("models/daily_overview.sql")
+        self.assertNotIn(" as date)", overview, "date casts must go through aws_cloud_cost_utc_date")
+        self.assertEqual(overview.count("aws_cloud_cost_utc_date("), 4)
+        macro = self.read("macros/aws_cloud_cost_utc_date.sql")
+        self.assertIn("timezone('UTC'", macro)
+
     def test_readme_documents_the_current_flow(self):
         readme = self.read("README.md")
         for snippet in [
