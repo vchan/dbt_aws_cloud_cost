@@ -27,11 +27,11 @@ class DemoConfigurationTest(unittest.TestCase):
             "scripts/setup.sh",
             "seeds/aws_cost_report.csv",
             "seeds/properties.yml",
+            "catalogs.yml",
         ]:
             with self.subTest(present=rel):
                 self.assertTrue((ROOT / rel).is_file(), f"missing required file: {rel}")
-        # Tooling removed during simplification (or the catalogs.yml multi-catalog
-        # setup this branch moved away from) must stay gone.
+        # Tooling removed during simplification and the Snowflake port must stay gone.
         for gone in [
             "scripts/setup_env.sh",
             "scripts/generate_local_csv.sh",
@@ -42,7 +42,13 @@ class DemoConfigurationTest(unittest.TestCase):
             "scripts/use_catalog.sh",
             "shadowtraffic",
             "local_files",
-            "catalogs.yml",
+            "scripts/snowflake_sql_api.py",
+            "scripts/set_network_policy.py",
+            "scripts/refresh_horizon_token.sh",
+            "scripts/configure_horizon_schema.sh",
+            "scripts/doctor.sh",
+            "macros/create_seed_db.sql",
+            "macros/set_rsa_public_key.sql",
             "models/staging/src_aws_cloud_cost.yml",
             "models/staging/base/stg_aws_cloud_cost__report_base.sql",
         ]:
@@ -77,14 +83,24 @@ class DemoConfigurationTest(unittest.TestCase):
         types = re.findall(r"- type:\s*(\w+)", profiles)
         self.assertEqual(
             sorted(types),
-            ["lakecompute", "snowflake"],
-            "prod target should declare exactly the snowflake + lakecompute connections",
+            ["bigquery", "lakecompute"],
+            "prod target should declare exactly the bigquery + lakecompute connections",
         )
         self.assertEqual(
             profiles.count("default: true"),
             1,
             "exactly one connection in the prod target must be the default",
         )
+
+    def test_profiles_have_no_snowflake_left(self):
+        for rel in ["profiles.yml", "dbt_project.yml", "README.md", ".env.example"]:
+            with self.subTest(file=rel):
+                self.assertNotIn("SNOWFLAKE_", self.read(rel))
+
+    def test_catalog_is_a_biglake_metastore(self):
+        catalogs = self.read("catalogs.yml")
+        self.assertIn("type: biglake_metastore", catalogs)
+        self.assertIn("gs://", catalogs)
 
     def test_staging_reads_from_the_seed(self):
         staging = self.read("models/staging/stg_report.sql")
@@ -93,19 +109,22 @@ class DemoConfigurationTest(unittest.TestCase):
         self.assertNotIn("source(", staging)
         self.assertNotIn("env_var", staging)
         self.assertNotIn(" over (", staging.lower(), "staging must avoid window functions")
+        self.assertIn("catalog_name='bigquery_iceberg'", staging)
+        self.assertNotIn("table_format", staging.replace("catalog_name", ""))
+        self.assertNotIn("try_cast", staging, "use dbt.safe_cast, not a Snowflake function")
 
     def test_daily_overview_routes_through_lakecompute(self):
         overview = self.read("models/daily_overview.sql")
-        self.assertIn("adapter='lakecompute'", overview)
-        self.assertIn("propagate='snowflake'", overview)
+        self.assertIn("else 'lakecompute'", overview)
+        self.assertIn("aws_cloud_cost_reference", overview)
+        self.assertNotIn("propagate", overview)
 
     def test_readme_documents_the_current_flow(self):
         readme = self.read("README.md")
         for snippet in [
             ".env.example",
             "dbt seed",
-            "cargo build",
-            "+adapter",
+            "aws_cloud_cost_reference",
             "lakecompute",
             "daily_overview",
         ]:
