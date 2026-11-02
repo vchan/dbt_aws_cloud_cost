@@ -1,10 +1,6 @@
 {% macro get_aws_cloud_cost_report_columns() %}
 
-{#- Explicit microsecond precision, not dbt.type_timestamp()'s unscaled
-   default (Snowflake resolves that to nanosecond/NTZ(9)) -- Iceberg v2 tables
-   can't store nanosecond-precision timestamps, and this seed data never
-   carries real nanosecond-level information anyway. #}
-{% set timestamp_type = 'timestamp_ntz(6)' %}
+{% set timestamp_type = dbt.type_timestamp() %}
 
 {% set columns = [
     {"name": "_file", "datatype": dbt.type_string()},

@@ -17,9 +17,3 @@ TRIM(BOTH '/' FROM ({{ string }}))
 TRIM({{ string }}, '/')
 
 {%- endmacro %}
-
-{% macro snowflake__aws_cloud_cost_trim(string) %}
-
-TRIM({{ string }}, '/')
-
-{%- endmacro %}

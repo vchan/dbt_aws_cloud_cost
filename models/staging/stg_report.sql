@@ -18,7 +18,7 @@ fields as (
     select
         'seed.aws_cost_report' as source_relation,
         {% for col in get_aws_cloud_cost_report_columns() %}
-        try_cast(nullif(cast({{ col.name }} as {{ dbt.type_string() }}), '') as {{ col.datatype }}) as {{ col.name }}{% if not loop.last %},{% endif %}
+        {{ dbt.safe_cast("nullif(cast(" ~ col.name ~ " as " ~ dbt.type_string() ~ "), '')", col.datatype) }} as {{ col.name }}{% if not loop.last %},{% endif %}
         {% endfor %}
     from source
 ),

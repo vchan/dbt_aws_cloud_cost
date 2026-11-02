@@ -1,7 +1,17 @@
+{#-
+  This model is DuckDB SQL, because Lake Compute runs it and publishes the
+  result to BigQuery. It is also valid BigQuery SQL, so the same file builds
+  natively as a comparison reference:
+      dbt build --vars '{aws_cloud_cost_reference: true}'
+  (see README, "Comparing with a BigQuery-native build").
+
+  decimal(38, 9) is BigQuery's NUMERIC, so both engines store the same type.
+-#}
+{%- set numeric_type = 'decimal(38, 9)' -%}
 {{
     config(
         materialized='table',
-        adapter='lakecompute'
+        adapter=none if var('aws_cloud_cost_reference', false) else 'lakecompute'
     )
 }}
 
@@ -82,8 +92,8 @@ fields as (
         report,
 
         {# Period Details #}
-        cast({{ dbt.date_trunc('day', 'usage_start_date') }} as date) as usage_start_date,
-        cast({{ dbt.date_trunc('day', 'usage_end_date') }} as date) as usage_end_date,
+        cast(usage_start_date as date) as usage_start_date,
+        cast(usage_end_date as date) as usage_end_date,
         cast(billing_period_start_date as date) as billing_period_start_date,
         cast(billing_period_end_date as date) as billing_period_end_date,
 
@@ -139,45 +149,45 @@ fields as (
         to_region_code,
 
         {# Usage Metrics #}
-        cast(sum(coalesce(usage_amount, 0)) as {{ dbt.type_numeric() }}) as usage_amount,
-        cast(sum(coalesce(normalized_usage_amount, 0)) as {{ dbt.type_numeric() }}) as normalized_usage_amount,
-        cast(max(normalization_factor) as {{ dbt.type_numeric() }}) as normalization_factor,
+        cast(sum(coalesce(usage_amount, 0)) as {{ numeric_type }}) as usage_amount,
+        cast(sum(coalesce(normalized_usage_amount, 0)) as {{ numeric_type }}) as normalized_usage_amount,
+        cast(max(normalization_factor) as {{ numeric_type }}) as normalization_factor,
 
         {# Cost Metrics - General #}
-        cast(sum(coalesce(blended_cost, 0)) as {{ dbt.type_numeric() }}) as blended_cost,
-        cast(sum(coalesce(unblended_cost, 0)) as {{ dbt.type_numeric() }}) as unblended_cost,
-        cast(sum(coalesce(public_on_demand_cost, 0)) as {{ dbt.type_numeric() }}) as public_on_demand_cost,
-        cast(avg(blended_rate) as {{ dbt.type_numeric() }}) as avg_blended_rate,
-        cast(avg(unblended_rate) as {{ dbt.type_numeric() }}) as avg_unblended_rate,
-        cast(avg(public_on_demand_rate) as {{ dbt.type_numeric() }}) as avg_public_on_demand_rate,
-        cast(count(*) as {{ dbt.type_numeric() }}) as count_line_items,
+        cast(sum(coalesce(blended_cost, 0)) as {{ numeric_type }}) as blended_cost,
+        cast(sum(coalesce(unblended_cost, 0)) as {{ numeric_type }}) as unblended_cost,
+        cast(sum(coalesce(public_on_demand_cost, 0)) as {{ numeric_type }}) as public_on_demand_cost,
+        cast(avg(blended_rate) as {{ numeric_type }}) as avg_blended_rate,
+        cast(avg(unblended_rate) as {{ numeric_type }}) as avg_unblended_rate,
+        cast(avg(public_on_demand_rate) as {{ numeric_type }}) as avg_public_on_demand_rate,
+        cast(count(*) as {{ numeric_type }}) as count_line_items,
 
         {# Cost & Usage Metrics - Reservations
             Using MAX's + MIN's under the assumption that there is a 1:Many relationship between Reservations and Line Items
         #}
-        cast(max(reservation_amortized_upfront_cost_for_usage) as {{ dbt.type_numeric() }}) as reservation_amortized_upfront_cost_for_usage,
-        cast(max(reservation_amortized_upfront_fee_for_billing_period) as {{ dbt.type_numeric() }}) as reservation_amortized_upfront_fee_for_billing_period,
-        cast(max(reservation_effective_cost) as {{ dbt.type_numeric() }}) as reservation_effective_cost,
-        cast(max(number_of_reservations) as {{ dbt.type_numeric() }}) as number_of_reservations,
-        cast(max(normalized_units_per_reservation) as {{ dbt.type_numeric() }}) as normalized_units_per_reservation,
-        cast(max(units_per_reservation) as {{ dbt.type_numeric() }}) as units_per_reservation,
-        cast(max(total_reserved_normalized_units) as {{ dbt.type_numeric() }}) as total_reserved_normalized_units,
-        cast(max(total_reserved_units) as {{ dbt.type_numeric() }}) as total_reserved_units,
+        cast(max(reservation_amortized_upfront_cost_for_usage) as {{ numeric_type }}) as reservation_amortized_upfront_cost_for_usage,
+        cast(max(reservation_amortized_upfront_fee_for_billing_period) as {{ numeric_type }}) as reservation_amortized_upfront_fee_for_billing_period,
+        cast(max(reservation_effective_cost) as {{ numeric_type }}) as reservation_effective_cost,
+        cast(max(number_of_reservations) as {{ numeric_type }}) as number_of_reservations,
+        cast(max(normalized_units_per_reservation) as {{ numeric_type }}) as normalized_units_per_reservation,
+        cast(max(units_per_reservation) as {{ numeric_type }}) as units_per_reservation,
+        cast(max(total_reserved_normalized_units) as {{ numeric_type }}) as total_reserved_normalized_units,
+        cast(max(total_reserved_units) as {{ numeric_type }}) as total_reserved_units,
 
-        cast(max(reservation_recurring_fee_for_usage) as {{ dbt.type_numeric() }}) as reservation_recurring_fee_for_usage,
-        cast(min(reservation_unused_amortized_upfront_fee_for_billing_period) as {{ dbt.type_numeric() }}) as reservation_unused_amortized_upfront_fee_for_billing_period,
-        cast(min(reservation_unused_normalized_unit_quantity) as {{ dbt.type_numeric() }}) as reservation_unused_normalized_unit_quantity,
-        cast(min(reservation_unused_quantity) as {{ dbt.type_numeric() }}) as reservation_unused_quantity,
-        cast(min(reservation_unused_recurring_fee) as {{ dbt.type_numeric() }}) as reservation_unused_recurring_fee,
-        cast(max(reservation_upfront_value) as {{ dbt.type_numeric() }}) as reservation_upfront_value,
+        cast(max(reservation_recurring_fee_for_usage) as {{ numeric_type }}) as reservation_recurring_fee_for_usage,
+        cast(min(reservation_unused_amortized_upfront_fee_for_billing_period) as {{ numeric_type }}) as reservation_unused_amortized_upfront_fee_for_billing_period,
+        cast(min(reservation_unused_normalized_unit_quantity) as {{ numeric_type }}) as reservation_unused_normalized_unit_quantity,
+        cast(min(reservation_unused_quantity) as {{ numeric_type }}) as reservation_unused_quantity,
+        cast(min(reservation_unused_recurring_fee) as {{ numeric_type }}) as reservation_unused_recurring_fee,
+        cast(max(reservation_upfront_value) as {{ numeric_type }}) as reservation_upfront_value,
 
         {# Cost & Usage Metrics - Savings Plans #}
-        cast(max(savings_plan_amortized_upfront_commitment_for_billing_period) as {{ dbt.type_numeric() }}) as savings_plan_amortized_upfront_commitment_for_billing_period,
-        cast(max(savings_plan_recurring_commitment_for_billing_period) as {{ dbt.type_numeric() }}) as savings_plan_recurring_commitment_for_billing_period,
-        cast(max(savings_plan_effective_cost) as {{ dbt.type_numeric() }}) as savings_plan_effective_cost,
-        cast(max(savings_plan_rate) as {{ dbt.type_numeric() }}) as savings_plan_rate,
-        cast(max(savings_plan_total_commitment_to_date) as {{ dbt.type_numeric() }}) as savings_plan_total_commitment_to_date,
-        cast(max(savings_plan_used_commitment) as {{ dbt.type_numeric() }}) as savings_plan_used_commitment
+        cast(max(savings_plan_amortized_upfront_commitment_for_billing_period) as {{ numeric_type }}) as savings_plan_amortized_upfront_commitment_for_billing_period,
+        cast(max(savings_plan_recurring_commitment_for_billing_period) as {{ numeric_type }}) as savings_plan_recurring_commitment_for_billing_period,
+        cast(max(savings_plan_effective_cost) as {{ numeric_type }}) as savings_plan_effective_cost,
+        cast(max(savings_plan_rate) as {{ numeric_type }}) as savings_plan_rate,
+        cast(max(savings_plan_total_commitment_to_date) as {{ numeric_type }}) as savings_plan_total_commitment_to_date,
+        cast(max(savings_plan_used_commitment) as {{ numeric_type }}) as savings_plan_used_commitment
 
     from source_report
     left join billing_account_names
