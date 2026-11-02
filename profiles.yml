@@ -1,24 +1,29 @@
-## Profile for the multi-catalog demo (DuckDB only).
+## Profile for the BigQuery + Lake Compute demo.
+##
+## The default output is BigQuery. Models with `adapter: lakecompute` run on
+## Lake Compute (DuckDB) and publish their result to BigQuery.
+## The project, location, and connection below belong to the operator's test
+## environment; change them to your own.
 
 aws_cloud_cost:
   target: prod
   outputs:
 
     prod:
-      - type: snowflake
+      - type: bigquery
         default: true
-        account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
-        user: "{{ env_var('SNOWFLAKE_USER') }}"
-        private_key: "{{ env_var('SNOWFLAKE_PRIVATE_KEY') }}"
-        method: keypair
-        role: "{{ env_var('SNOWFLAKE_ROLE') }}"
-        database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
-        schema: "{{ env_var('SNOWFLAKE_SCHEMA') }}"
-        warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+        method: oauth
+        project: singular-vector-135519
+        dataset: aws_cloud_cost
+        location: us-east4
         threads: 4
 
       - type: lakecompute
-        method: fivetran
-        fivetran_credential: "{{ env_var('LAKE_COMPUTE_AUTH_TOKEN') }}"
-        database: "{{ env_var('LAKE_COMPUTE_DATABASE') }}"
-        schema: "{{ env_var('LAKE_COMPUTE_SCHEMA') }}"
+        method: token
+        base_url: http://localhost:8080
+        token: "{{ env_var('LAKE_COMPUTE_AUTH_TOKEN') }}"
+        ## The BigQuery project that Lake Compute publishes into.
+        database: singular-vector-135519
+        ## BigQuery connection used to publish the Iceberg table. Fusion
+        ## builds that don't know this field reject the profile.
+        bigquery_connection: singular-vector-135519.us-east4.quack_probe_conn
