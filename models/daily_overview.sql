@@ -5,13 +5,17 @@
       dbt build --vars '{aws_cloud_cost_reference: true}'
   (see README, "Comparing with a BigQuery-native build").
 
-  decimal(38, 9) is BigQuery's NUMERIC, so both engines store the same type.
+  The numeric type is 38 digits with 9 decimals on both engines, which is
+  BigQuery's NUMERIC. BigQuery's CAST rejects parameterized types, so it gets
+  the bare `numeric`; DuckDB's bare `numeric` has only 3 decimals, so it gets
+  the explicit form.
 -#}
-{%- set numeric_type = 'decimal(38, 9)' -%}
+{%- set is_reference = var('aws_cloud_cost_reference', false) -%}
+{%- set numeric_type = 'numeric' if is_reference else 'decimal(38, 9)' -%}
 {{
     config(
         materialized='table',
-        adapter=none if var('aws_cloud_cost_reference', false) else 'lakecompute'
+        adapter=none if is_reference else 'lakecompute'
     )
 }}
 

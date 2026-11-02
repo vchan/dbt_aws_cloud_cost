@@ -111,9 +111,10 @@ export DISABLE_AUTO_DRIVER_REBUILD=true
 
 ## Comparing with a BigQuery-native build
 
-`daily_overview` is DuckDB SQL that is also valid BigQuery SQL (the numeric
-type is `decimal(38, 9)`, which is BigQuery's `NUMERIC`, and the model avoids
-dialect-specific functions). The var `aws_cloud_cost_reference` runs the same
+`daily_overview` is DuckDB SQL that is also valid BigQuery SQL: it avoids
+dialect-specific functions, and its numeric columns are 38 digits with 9
+decimals on both engines (`decimal(38, 9)` in DuckDB, BigQuery's `NUMERIC` in
+the reference build). The var `aws_cloud_cost_reference` runs the same
 model on BigQuery instead of Lake Compute. Build the reference into a separate
 dataset with `AWS_CLOUD_COST_TARGET_SCHEMA`:
 
